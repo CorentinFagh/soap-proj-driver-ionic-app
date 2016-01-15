@@ -1,0 +1,32 @@
+<ion-view view-title="Bienvenue">
+    <ion-content class="padding">
+    <div class="card">
+        <div class="item item-text-wrap"> 
+           <i class="ion-person" style="width:25px;"></i> {{driver.name}}
+        </div>
+        <div class="item item-text-wrap"> 
+           <i class="ion-key" style="width:25px;"></i> {{truck.immatriculation}}
+        </div>
+    </div>
+     <div class="card">
+        <div class="item item-text-wrap"> 
+            <p>
+                {{path.end_latitude}} - {{path.end_longitude}}
+            </p>
+            <p>
+                {{path.end_date | date:"h:mm"}}
+            </p>
+            
+        </div>
+        <div class="item item-text-wrap">   
+            <p>
+                {{position}} 
+            </p>
+            <p>
+                {{remainingTime}}
+            </p>
+        </div>
+    </div>
+        <div id="map" data-tap-disabled="true"></div>
+    </ion-content>
+</ion-view>

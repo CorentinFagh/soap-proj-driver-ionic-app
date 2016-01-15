@@ -1,0 +1,28 @@
+<ion-view view-title="Bienvenue">
+    <ion-content class="padding">
+        <div class="card">
+            <div class="item item-text-wrap" style="text-align:center"> 
+                <h3>
+                    {{now | date:"dd/MM/yyyy"}}
+                </h3>
+                <h1>
+                    {{now | date:"h:mm"}}
+                </h1>
+            </div>
+             <div class="item item-text-wrap" style="text-align:center"> 
+                <form ng-submit="findPath()">
+                    <div class="list">
+                        <label class="item item-input">
+                            <input type="number" class="form-control" ng-model="path.id" placeholder="identifiant de trajet" >
+                        </label>
+                        <label class="item">
+                            <button class="button" type="submit">
+                                <i class="ion ion-android-done" style="width:25px;"></i> Trouver
+                            </button>
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </ion-content>
+</ion-view>
