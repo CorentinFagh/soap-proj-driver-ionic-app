@@ -1,31 +1,93 @@
 angular.module('starter.controllers', [])
 
-.controller('DashCtrl', function($scope,$cordovaGeolocation, Paths, Drivers, Trucks) {
+.controller('DashCtrl', function($scope, $state,Paths,PathStatus, Positioner,CentralCaller) {
 		console.log("dash")
-
- 		Paths.setCurrent(Paths.get(0)); // pour dev !
-
-		$scope.path = Paths.getCurrent();
-		$scope.driver =  Drivers.get($scope.path.driver_id);
-		$scope.truck =  Trucks.get($scope.path.truck_id);
-
-		$scope.remainingTime = "";
-		console.log("path", $scope.path )
-		console.log("driver", $scope.driver )
-		console.log("truck", $scope.truck )
-
-    console.log("geoloc")
-
-    var directionsDisplay;
-    var directionsService = new google.maps.DirectionsService();
-    var map;
-
-    var geocoder = new google.maps.Geocoder;
-    var destination = null;
+    $scope.path = Paths.getCurrent();
+    $scope.pathStatus = PathStatus.get($scope.path.status);
+    $scope.pathStatusColor = PathStatus.getC($scope.path.status);
+    $scope.departureAddress = "";
+    $scope.arrivalAddress = "";
+    $scope.travelTime = "";
 
     $scope.position = "";
 
-    function initialize(latitude,longitude,cb) {
+    //Récupération de l'adresse de départ
+    Positioner.reverseGeoCode(
+      parseFloat($scope.path.start_latitude),
+      parseFloat($scope.path.start_longitude),
+      function(results)  {
+        var departure = results[1].formatted_address;
+        $scope.departureAddress = departure;
+        $scope.$apply() 
+      }
+    );
+    // récupération de l'adresse d'arrivée
+    Positioner.reverseGeoCode(
+      parseFloat($scope.path.end_latitude),
+      parseFloat($scope.path.end_longitude),
+      function(results)  {
+        var arrival = results[1].formatted_address;
+        $scope.arrivalAddress = arrival;
+        $scope.$apply();
+
+        // Récupération du temps de trajet
+        Positioner.getCurrentPosition(function(position){
+          Positioner.calcRoute(
+            {lat: position.coords.latitude, lng: position.coords.longitude},
+            arrival,
+            function(routingResult){
+              $scope.travelTime = routingResult.routes[0].legs[0].duration.text;
+              $scope.$apply();
+            }
+          );
+        });
+        
+      }
+    );
+
+    $scope.goToMap = function(){
+      $state.go("map");
+    };
+    $scope.updateState = function(newState){
+      console.log(newState);
+      Paths.setCurrentState(newState);
+      $scope.path = Paths.getCurrent();
+      $scope.pathStatus = PathStatus.get($scope.path.status);
+      $scope.pathStatusColor = PathStatus.getC($scope.path.status);
+    };
+
+
+    //CentralCaller.launchSignal();
+})
+
+
+
+.controller('WelcomeCtrl', function($scope,$state, Paths){
+  window.localStorage['current-path'] = "";
+  $scope.now = new Date();
+  $scope.path = {};
+   $scope.findPath = function(){
+    console.log("debut findpath " ,$scope.path.id);
+    var pathFound = Paths.get($scope.path.id);
+    if (pathFound) {
+      console.log("found : " , pathFound );
+      Paths.setCurrent(pathFound);
+      $state.go("dash");
+    }
+    else
+      console.log("pas de trajets")
+  }
+})
+
+
+
+.controller('MapCtrl', function($scope,$state, Paths, Positioner,CentralCaller){  
+    $scope.path = JSON.parse(window.localStorage['current-path'] || '{}');
+
+    var directionsDisplay;
+    var map;
+
+    var initialize = function (latitude,longitude,cb) {
       console.log("initialize")
       directionsDisplay = new google.maps.DirectionsRenderer();
       var point = new google.maps.LatLng(latitude, longitude);
@@ -38,96 +100,43 @@ angular.module('starter.controllers', [])
       cb();
     }
 
-    function calcRoute(org,dest,cb) {
-      console.log("calcRoute")
-      var request = {
-        origin:org,
-        destination:dest,
-        travelMode: google.maps.TravelMode.DRIVING
-      };
-      directionsService.route(request, function(result, status) {
-        if (status == google.maps.DirectionsStatus.OK) {
-          directionsDisplay.setDirections(result);
-          cb(result)
-        }
-      });
-    }
 
-    function reverseGeoCode(latitude,longitude,cb) {
-        console.log("reverseGeoCode")
-
-        var latlng = {lat: parseFloat($scope.path.end_latitude), lng: parseFloat($scope.path.end_longitude)};
-        geocoder.geocode({'location': latlng}, function(results, status) {
-          if (status === google.maps.GeocoderStatus.OK) {
-            if (results[1]) {
-              destination = results[1].formatted_address;
-              console.log(results[1])
-              cb(results);
-            } else {
-              window.alert('No results found');
-            }
-          } else {
-            window.alert('Geocoder failed due to: ' + status);
-          }
-        });
-    }
-
-    function getCurrentPosition(cb){
-      console.log("getCurrentPosition")
-
-        var posOptions = {timeout: 60000, enableHighAccuracy: false};
-        $cordovaGeolocation
-          .getCurrentPosition(posOptions)
-          .then(function (position) {
-            console.log("currentpos", position)
-            cb(position);
-          }, function(err) {
-            console.log(err) // error
-        });
-    }
-      console.log("let's start")
-
-    getCurrentPosition(function(position){
-      initialize(position.coords.latitude,position.coords.longitude,function(){
-          reverseGeoCode(parseFloat($scope.path.end_latitude), parseFloat($scope.path.end_longitude),function(results)  {
-            calcRoute(
-              {lat: position.coords.latitude, lng: position.coords.longitude},
-              results[1].formatted_address,
-              function(routingResult){
-                $scope.remainingTime = routingResult.routes[0].legs[0].duration.text;
-                console.log("theend");
+    Positioner.getCurrentPosition(
+      function(position){
+        initialize(
+          position.coords.latitude,
+          position.coords.longitude,
+          function(){
+            Positioner.reverseGeoCode(
+              parseFloat($scope.path.end_latitude),
+              parseFloat($scope.path.end_longitude),
+              function(results)  {
+                Positioner.calcRoute(
+                  {lat: position.coords.latitude, lng: position.coords.longitude},
+                  results[1].formatted_address,
+                  function(routingResult){
+                    directionsDisplay.setDirections(routingResult);
+                    console.log("theend");
+                  }
+                );
               }
-              );
-          });
-      });
-      reverseGeoCode(position.coords.latitude,position.coords.longitude, function(resultsCurrent){
-          $scope.position = resultsCurrent[1].formatted_address;
-      })
-    });
-  
+            );
+          }
+        );
+        Positioner.reverseGeoCode(position.coords.latitude,position.coords.longitude, function(resultsCurrent){
+            $scope.position = resultsCurrent[1].formatted_address;
+        })
+      }
+    );
+
+
+
+    //CentralCaller.launchSignal();
+
 })
 
 
 
-.controller('WelcomeCtrl', function($scope,$state, Paths){
-  $scope.now = new Date();
-  $scope.path = {};
-   $scope.findPath = function(){
-    console.log("debut findpath " ,$scope.path.id);
-    var pathFound = Paths.get($scope.path.id);
-    if (pathFound) {
-
-      console.log("trajets")
-      //localstorage.path = pathFound;
-      ;
-      console.log("state params val " , pathFound );
-      $state.go("dash");
-    }
-    else
-      console.log("pas de trajets")
-
-
-  }
-})
-
-
+/*
+   
+  */

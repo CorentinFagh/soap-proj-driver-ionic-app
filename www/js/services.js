@@ -1,94 +1,81 @@
 angular.module('starter.services', [])
 .factory('Paths', function (){
-  var paths = [
-	  {
-		id : 0,
-		driver_id: 0,
-		truck_id : 0,
-		start_latitude :44.896582,
-		start_longitude : -0.970305,
-		end_latitude : 44.855111,
-		end_longitude : -0.131080,		
-		status :0,
-		start_date : 1310669017,
-		end_date : 	 1310697856
-	  }
-  ];
+  var paths = [{
+    "id": "1",
+    "start_latitude": "44.896582",
+    "start_longitude": "-0.970305",
+    "end_latitude": "44.855111",
+    "end_longitude": "-0.131080",
+    "status": "2",
+    "start_date": "2015-12-12 00:00:00",
+    "end_date": "0000-00-00 00:00:00",
+    "driver": {
+        "id": "1",
+        "name": "Eliott",
+        "phone": "06 28 11 11 11"
+    },
+    "truck": {
+        "id": "1",
+        "immatriculation": "AZERTYY"
+    }
+}]; 
 
-  var current = {};
+  var currentKey = "curent-path";
 
 return {
   get:function(pathId){
 	console.log("Path.get - " + pathId)
 	for (var i = 0; i < paths.length; i++) {
-		if (paths[i].id === parseInt(pathId)) {
-		  return paths[i];
+		if (parseInt(paths[i].id) === parseInt(pathId)) {
+			var res = paths[i];
+			res.start_date = new Date(res.start_date);
+			res.status = parseInt(res.status);
+		  	return res;
 		}
 	  }
 	  return null;
   },
   setCurrent : function(path) {
-	current = path;
+      window.localStorage[currentKey] = JSON.stringify(path);
   },
   getCurrent : function() {
-	return current;
-  }
-}
+    return JSON.parse(window.localStorage[currentKey] || '{}');
+  },
+  setCurrentState : function(newStatus){
+  	var path = JSON.parse(window.localStorage[currentKey]);
 
-})
-.factory('Drivers', function (){
-  var drivers = [
-	  {
-		id : 0,
-		name :"bob",
-		phone : "0606060606"
-	  }
-  ];
+  	path.status = newStatus;
 
-return {
-  get:function(driverId){
-	for (var i = 0; i < drivers.length; i++) {
-		if (drivers[i].id === parseInt(driverId)) {
-		  return drivers[i];
-		}
-	  }
-	  return null;
-  }
-}
-
-})
-.factory('Trucks', function (){
-  var trucks = [
-	  {
-		id : 0,
-		immatriculation : "df-56-gt"
-	  }
-  ];
-
-return {
-  get:function(truckId){
-	for (var i = 0; i < trucks.length; i++) {
-		if (trucks[i].id === parseInt(truckId)) {
-		  return trucks[i];
-		}
-	  }
-	  return null;
+    window.localStorage[currentKey] = JSON.stringify(path);
   }
 }
 
 })
 .factory('PathStatus', function(){
 	var status = [
-		"En attente du chauffeur",
-		"En route",
-		"En pause",
-		"Arrivé",
-		"En panne"
+		"En attente de départ",
+		"En cours",
+		"Pause",
+		"En panne",
+		"En réparation",
+		"Trajet terminé"
 	];
-
+	var statusColor = [
+		"calm",
+		"balanced",
+		"royal",
+		"assertive",
+		"energized",
+		"positive"
+	];
 	return {
 	  get:function(statusId){
 		var res = status[statusId];
+		if (res) return res;
+		return null;
+	  },
+	  getC:function(statusId){
+		var res = statusColor[statusId];
 		if (res) return res;
 		return null;
 	  }
