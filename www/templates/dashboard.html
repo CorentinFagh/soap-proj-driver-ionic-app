@@ -1,6 +1,6 @@
 <ion-header-bar class="bar-stable bar-dark">
     <button class="button icon ion-chevron-left" on-tap="goOut()"></button>
-    <h1 class="title">Trajet</h1>
+    <h1 class="title">Trajet - {{now | date:"HH:mm"}}</h1>
 </ion-header-bar>
 
 <div class="bar bar-subheader bar-{{pathStatusColor}}">
@@ -22,8 +22,14 @@
                 <p ng-if="path.status!=0">
                     Départ : {{path.start_date| date:"dd/MM/yyyy HH:mm"}}
                 </p>
+                <p ng-if="path.status==5">
+                    Arrivée : {{path.end_date | date:"dd/MM/yyyy HH:mm"}}
+                </p>
                 <p>
-                    Temps estimé : {{travelTime}}
+                    Temps estimé : {{travelTimeEstim}}
+                </p>
+                <p ng-if="path.status==5">
+                    Temps effectif : {{travelTime}}
                 </p>
                 <i class="icon ion-map" on-tap="goToMap()"></i>
             </div>
@@ -64,9 +70,6 @@
         </div>
         <!--"Signaler un problème",-->
         <div ng-if="path.status==3">
-            <button  class="button button-full button-energized"  on-tap="updateState(4)">
-                Prise en charge
-            </button>
             <button  class="button button-full button-balanced"  on-tap="updateState(1)">
                 Redémarer
             </button>

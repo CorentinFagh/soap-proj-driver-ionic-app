@@ -51,17 +51,16 @@ angular.module('starter.positioner', [])
 })
 .factory('CentralCaller', function (Positioner,ApiService){
 	var intervalTask = null;
+	var verbose = false;
 	return {
 		launchSignal : function(pathId){
-			var signalSendingInterval = 5 * 1000; // 10 secondes
+			var signalSendingInterval = 30 * 1000; // 10 secondes
 			if (!intervalTask)
 				intervalTask = setInterval(function(){
 					Positioner.getCurrentPosition(function(position){
-						console.log("/!\\ - Ma position", position);
-						//
 						ApiService.postPosition(pathId,position,
 							function(){
-								console.log("Position envoyée");
+								if (verbose)console.log("Position envoyée");
 							},
 							function(){
 								console.log("ERREUR - Position non envoyée")
@@ -72,6 +71,7 @@ angular.module('starter.positioner', [])
 		},
 		stopSignal : function(){
 			if (intervalTask){
+				if (verbose)console.log("signal stopped");
 				clearInterval(intervalTask);
 				intervalTask = null;
 			}

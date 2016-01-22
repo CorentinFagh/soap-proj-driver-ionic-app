@@ -1,16 +1,21 @@
 angular.module('starter.controllers', [])
 
-.controller('DashCtrl', function($scope, $state,Paths,PathStatus, Positioner,CentralCaller) {
+.controller('DashCtrl', function($scope, $state,Paths,PathStatus, Positioner,CentralCaller,Clock) {
 		console.log("dash")
     
 
+    $scope.now = new Date();
+    Clock.launch(function(datedate){
+      console.log("clock cb");
+      $scope.now = datedate;
+      $scope.$apply();
+    });
     var signal = function(){
       if (PathStatus.get($scope.path.status) == "En cours")
         CentralCaller.launchSignal($scope.path.id);
       else
         CentralCaller.stopSignal();
     }
-
 
     Paths.getCurrent(
         function(found){
@@ -19,7 +24,16 @@ angular.module('starter.controllers', [])
           $scope.pathStatusColor = PathStatus.getC($scope.path.status);
           $scope.departureAddress = "";
           $scope.arrivalAddress = "";
+          $scope.travelTimeEstim = "";
           $scope.travelTime = "";
+          if ($scope.path.status == 5) {
+              var start = $scope.path.start_date;
+              var end = $scope.path.end_date;
+              var inMinutes = Math.round((end-start)/1000/60);
+              var hours = Math.trunc(inMinutes / 60);
+              var minutes = inMinutes%60;
+              $scope.travelTime = hours + ":" + minutes;
+          };
 
           $scope.position = "";
 
@@ -48,7 +62,7 @@ angular.module('starter.controllers', [])
                   {lat: position.coords.latitude, lng: position.coords.longitude},
                   arrival,
                   function(routingResult){
-                    $scope.travelTime = routingResult.routes[0].legs[0].duration.text;
+                    $scope.travelTimeEstim = routingResult.routes[0].legs[0].duration.text;
                     $scope.$apply();
                   }
                 );
@@ -62,6 +76,7 @@ angular.module('starter.controllers', [])
           };
           $scope.goOut = function(){
             CentralCaller.stopSignal();
+            Paths.clearCurrent();
             $state.go("welcome");
           };
           $scope.updateState = function(newState){
@@ -85,9 +100,15 @@ angular.module('starter.controllers', [])
 
 
 
-.controller('WelcomeCtrl', function($scope,$state, Paths){
+.controller('WelcomeCtrl', function($scope,$state, Paths, Clock){
   Paths.clearCurrent();
   $scope.now = new Date();
+  Clock.launch(function(datedate){
+    console.log("clock cb");
+    $scope.now = datedate;
+    $scope.$apply();
+  });
+
   $scope.path = {};
   $scope.errorStr = "";
    $scope.findPath = function(){
@@ -111,69 +132,66 @@ angular.module('starter.controllers', [])
 
 
 
-.controller('MapCtrl', function($scope,$state, Paths, Positioner){  
+.controller('MapCtrl', function($scope,$state, Paths, Positioner,Clock){  
     var directionsDisplay;
     var map;
 
-    var initialize = function (latitude,longitude,cb) {
+    $scope.now = new Date();
+    Clock.launch(function(datedate){
+      console.log("clock cb");
+      $scope.now = datedate;
+      $scope.$apply();
+    });
+
+    var initialize = function (startLatitude,startLongitude,path) {
       directionsDisplay = new google.maps.DirectionsRenderer();
-      var point = new google.maps.LatLng(latitude, longitude);
+      var point = new google.maps.LatLng(startLatitude, startLongitude);
       var mapOptions = {
         zoom:7,
         center: point
       };
       map = new google.maps.Map(document.getElementById("map"), mapOptions);
       directionsDisplay.setMap(map);
-      cb();
+      Positioner.reverseGeoCode(
+              parseFloat(path.end_latitude),
+              parseFloat(path.end_longitude),
+              function(results)  {
+                Positioner.calcRoute(
+                  {lat: parseFloat(startLatitude), lng: parseFloat(startLongitude)},
+                  results[1].formatted_address,
+                  function(routingResult){
+                    directionsDisplay.setDirections(routingResult);
+                  }
+                );
+              }
+            );
     };
 
-
     Paths.getCurrent(function(found){
-      Positioner.getCurrentPosition(
-        function(position){
-          initialize(
-            position.coords.latitude,
-            position.coords.longitude,
-            function(){
-              Positioner.reverseGeoCode(
-                parseFloat(found.end_latitude),
-                parseFloat(found.end_longitude),
-                function(results)  {
-                  Positioner.calcRoute(
-                    {lat: position.coords.latitude, lng: position.coords.longitude},
-                    results[1].formatted_address,
-                    function(routingResult){
-                      directionsDisplay.setDirections(routingResult);
-                    }
-                  );
-                }
-              );
-            }
+
+      if (found.status == 5) { // si le trajet est terminé on affiche l'ensemble du trajet
+        initialize(
+            found.start_latitude,
+            found.start_longitude,
+            found
           );
-          Positioner.reverseGeoCode(position.coords.latitude,position.coords.longitude, function(resultsCurrent){
-              $scope.position = resultsCurrent[1].formatted_address;
-          })
-        }
-      );  
+      }
+      else{
+        Positioner.getCurrentPosition(
+          function(position){
+            initialize(
+              position.coords.latitude,
+              position.coords.longitude,
+              found
+            );
+          }
+        );
+      }
     },
     function(err){
       console.log(err);
     });
-
-    
-
-
-    
-
-
-
     $scope.goDash = function(){
       $state.go("dash");
     };
 })
-
-
-
-/*
-   
-  */

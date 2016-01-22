@@ -102,6 +102,10 @@ angular.module('starter.services', [])
 				console.log(url);
 				$http.get(url).then(
 					function (success) {
+
+  						success.data.start_date = new Date(success.data.start_date);
+  						success.data.end_date = new Date(success.data.end_date);
+  						console.log(url + "  -  SUCCESS")
 						cbSuccess(success.data);
 					},
 					function (error) {
@@ -174,4 +178,26 @@ angular.module('starter.services', [])
 			cbSuccess();
 		}
 	}
-});
+})
+.factory('Clock',function(){
+	var intervalTask = null;
+	return {
+		launch : function(cb){
+			var interval = 60 * 1000; // 10 secondes
+			if (intervalTask){
+				clearInterval(intervalTask);
+				intervalTask = null;
+			}
+			intervalTask = setInterval(function(){
+				cb(new Date());
+			}, interval);
+		},
+		stop : function(){
+			if (intervalTask){
+				clearInterval(intervalTask);
+				intervalTask = null;
+			}
+		}
+	}
+})
+;
