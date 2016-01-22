@@ -6,7 +6,6 @@ angular.module('starter.positioner', [])
 
 	return {  	
 	    calcRoute : function (org,dest,cb) {
-			console.log("calcRoute")
 			var request = {
 				origin:org,
 				destination:dest,
@@ -22,14 +21,11 @@ angular.module('starter.positioner', [])
 			});
 	    },
 	    reverseGeoCode : function (latitude,longitude,cb) {
-			console.log("reverseGeoCode")
-
 			var latlng = {lat: parseFloat(latitude), lng: parseFloat(longitude)};
 			geocoder.geocode({'location': latlng}, function(results, status) {
 				if (status === google.maps.GeocoderStatus.OK) {
 					if (results[1]) {
 						destination = results[1].formatted_address;
-						console.log(results[1])
 						cb(results);
 					}
 					else {
@@ -42,13 +38,10 @@ angular.module('starter.positioner', [])
 			});
 	    },
 	    getCurrentPosition : function (cb){
-			console.log("getCurrentPosition")
-
 			var posOptions = {timeout: 60000, enableHighAccuracy: false};
 			$cordovaGeolocation
 			.getCurrentPosition(posOptions)
 			.then(function (position) {
-				console.log("currentpos", position)
 				cb(position);
 			}, function(err) {
 				console.log(err) // error
@@ -56,16 +49,32 @@ angular.module('starter.positioner', [])
 		}
 	}
 })
-.factory('CentralCaller', function (Positioner){
-  	
-	return {  
-		launchSignal : function(){
-			setInterval(function(){ 
-				Positioner.getCurrentPosition(function(position){
-					console.log("Ma position", position);
-				})
-			}, 10000);
+.factory('CentralCaller', function (Positioner,ApiService){
+	var intervalTask = null;
+	return {
+		launchSignal : function(pathId){
+			var signalSendingInterval = 5 * 1000; // 10 secondes
+			if (!intervalTask)
+				intervalTask = setInterval(function(){
+					Positioner.getCurrentPosition(function(position){
+						console.log("/!\\ - Ma position", position);
+						//
+						ApiService.postPosition(pathId,position,
+							function(){
+								console.log("Position envoyée");
+							},
+							function(){
+								console.log("ERREUR - Position non envoyée")
+							})
+					})
+				}, signalSendingInterval);
 
+		},
+		stopSignal : function(){
+			if (intervalTask){
+				clearInterval(intervalTask);
+				intervalTask = null;
+			}
 		}
 	}
 });

@@ -9,7 +9,16 @@
                     {{now | date:"HH:mm"}}
                 </h1>
             </div>
-             <div class="item item-text-wrap" style="text-align:center"> 
+            <div class="item item-text-wrap" style="text-align:center" ng-if="errorStr!=''">
+                &nbsp;
+                <span>
+                    <span style="background-color: #f7a39c;color: #fff;padding:5px;border: #ef473a 0.5px solid;border-radius: 2.5px;">
+                        {{errorStr}}
+                    </span> 
+                </span>
+            </div>
+
+            <div class="item item-text-wrap" style="text-align:center"> 
                 <form ng-submit="findPath()">
                     <div class="list">
                         <label class="item item-input">

@@ -1,4 +1,5 @@
 <ion-header-bar class="bar-stable bar-dark">
+    <button class="button icon ion-chevron-left" on-tap="goOut()"></button>
     <h1 class="title">Trajet</h1>
 </ion-header-bar>
 
@@ -18,7 +19,7 @@
                 </p>
             </div>
             <div class="item item-text-wrap item-icon-right"> 
-                <p>
+                <p ng-if="path.status!=0">
                     Départ : {{path.start_date| date:"dd/MM/yyyy HH:mm"}}
                 </p>
                 <p>
@@ -36,7 +37,7 @@
                      <i class="ion-ios-telephone" style="width:25px;"></i> {{path.driver.phone}}
                 </p>
                 <p>
-                    <i class="ion-key" style="width:25px;"></i> {{path.truck.immatriculation}}
+                    <i class="ion-key" style="width:25px;"></i> {{path.truck.matriculation}}
                 </p>            
             </div>
         </div>
