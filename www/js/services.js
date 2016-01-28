@@ -117,8 +117,7 @@ angular.module('starter.services', [])
 					});
 		},
 		postPosition : function(pathId, position, cbSuccess, cbError){
-				var finalTS = position.timestamp / 1000;
-				var urlPattern = ["/api", "position", pathId, position.coords.latitude, position.coords.longitude, finalTS];
+				var urlPattern = ["/api", "position", pathId, position.coords.latitude, position.coords.longitude, position.timestamp ];
 				var url = urlPattern.join("/");
 				console.log(url);
 				$http.post(url,{}).then(
